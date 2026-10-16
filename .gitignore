@@ -21,9 +21,11 @@ yarn-error.log*
 
 # Environment
 .env
+.vercel
 .DS_Store
 Thumbs.db
 
 # Uploads local
 backend/uploads/*
 !backend/uploads/.gitkeep
+.env*
