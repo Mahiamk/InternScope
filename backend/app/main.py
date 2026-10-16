@@ -46,8 +46,9 @@ app.add_middleware(
 )
 
 # Ensure upload directory exists and mount static files
-os.makedirs(settings.UPLOAD_DIR, exist_ok=True)
-app.mount("/uploads", StaticFiles(directory=settings.UPLOAD_DIR), name="uploads")
+upload_dir = "/tmp/uploads" if os.environ.get("VERCEL") else settings.UPLOAD_DIR
+os.makedirs(upload_dir, exist_ok=True)
+app.mount("/uploads", StaticFiles(directory=upload_dir), name="uploads")
 
 # Include API v1 Router
 app.include_router(api_router, prefix=settings.API_V1_STR)
