@@ -14,18 +14,25 @@ from app.db.seed_community import seed_community
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     # Initialize database tables
-    async with async_engine.begin() as conn:
-        await conn.run_sync(Base.metadata.create_all)
-    
-    # Auto-seed initial demonstration data if empty
-    await seed_database()
-    await seed_senior_qa()
-    await seed_community()
+    try:
+        async with async_engine.begin() as conn:
+            await conn.run_sync(Base.metadata.create_all)
+        
+        # Auto-seed initial demonstration data if empty
+        await seed_database()
+        await seed_senior_qa()
+        await seed_community()
+    except Exception as e:
+        import logging
+        logging.getLogger(__name__).error(f"Lifespan startup error: {e}")
     
     yield
     
     # Cleanup
-    await async_engine.dispose()
+    try:
+        await async_engine.dispose()
+    except Exception:
+        pass
 
 app = FastAPI(
     title=settings.PROJECT_NAME,
