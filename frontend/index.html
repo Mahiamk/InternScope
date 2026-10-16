@@ -1,0 +1,32 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'><rect width='32' height='32' fill='%230a0a0a'/><rect x='8' y='8' width='8' height='16' fill='%23991b1b'/><rect x='16' y='8' width='8' height='8' fill='%23ffffff'/></svg>" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>InternScope — Student Internship Experience Platform</title>
+    <meta name="description" content="Discover verified student internship experiences, compare reported allowances, explore workplace cultures, and track applications." />
+    <!-- Lexend Font -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Lexend:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+    <meta name="color-scheme" content="light dark" />
+    <script>
+      (function() {
+        try {
+          var stored = localStorage.getItem('internscope_theme');
+          var supportDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
+          if (stored === 'dark' || (!stored && supportDark) || (stored === 'system' && supportDark)) {
+            document.documentElement.classList.add('dark');
+          } else {
+            document.documentElement.classList.remove('dark');
+          }
+        } catch (e) {}
+      })();
+    </script>
+  </head>
+  <body class="bg-[#fafafa] dark:bg-[#0a0a0a] text-[#0a0a0a] dark:text-[#f5f5f5] font-lexend antialiased selection:bg-[#991b1b] selection:text-white">
+    <div id="root"></div>
+    <script type="module" src="/src/main.tsx"></script>
+  </body>
+</html>
