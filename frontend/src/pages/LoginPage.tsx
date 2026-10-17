@@ -1,11 +1,12 @@
 import React, { useState } from 'react';
-import { Link, useNavigate } from 'react-router-dom';
+import { Link, useNavigate, useLocation } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import { Button } from '../components/ui/Button';
 import { WarningCircle, UserCircle, ShieldCheck } from '@phosphor-icons/react';
 
 export const LoginPage: React.FC = () => {
   const navigate = useNavigate();
+  const location = useLocation();
   const { login } = useAuth();
 
   const [email, setEmail] = useState('');
@@ -19,7 +20,8 @@ export const LoginPage: React.FC = () => {
     setLoading(true);
     try {
       await login(email, password);
-      navigate('/dashboard');
+      const destination = (location.state as any)?.from || '/dashboard';
+      navigate(destination, { replace: true });
     } catch (err: any) {
       setError(err.message || 'Incorrect email or password');
     } finally {
