@@ -51,68 +51,115 @@ async def list_companies(
     res = await db.execute(query)
     companies = res.scalars().all()
 
+    if not companies:
+        return []
+
+    company_ids = [c.id for c in companies]
+
+    # Batch 1: Get experiences count and allowance stats for all companies
+    exp_res = await db.execute(
+        select(
+            InternshipExperience.company_id,
+            func.count(InternshipExperience.id).label("exp_count"),
+            func.avg(InternshipExperience.allowance).label("avg_allowance"),
+            func.min(InternshipExperience.allowance).label("min_allowance"),
+            func.max(InternshipExperience.allowance).label("max_allowance"),
+            func.avg(InternshipExperience.overall_rating).label("avg_rating")
+        )
+        .where(
+            and_(
+                InternshipExperience.company_id.in_(company_ids),
+                InternshipExperience.status == "PUBLISHED"
+            )
+        )
+        .group_by(InternshipExperience.company_id)
+    )
+    exp_stats_map = {
+        row[0]: {
+            "exp_count": row[1],
+            "avg_allowance": row[2],
+            "min_allowance": row[3],
+            "max_allowance": row[4],
+            "avg_rating": row[5]
+        }
+        for row in exp_res.all()
+    }
+
+    # Batch 2: Opportunities count for all companies
+    opp_res = await db.execute(
+        select(
+            Opportunity.company_id,
+            func.count(Opportunity.id).label("opp_count")
+        )
+        .where(
+            and_(
+                Opportunity.company_id.in_(company_ids),
+                Opportunity.status == "OPEN"
+            )
+        )
+        .group_by(Opportunity.company_id)
+    )
+    opp_stats_map = {row[0]: row[1] for row in opp_res.all()}
+
+    # Batch 3: Top technologies for all companies
+    tech_res = await db.execute(
+        select(
+            InternshipExperience.company_id,
+            Technology.name,
+            func.count(ExperienceTechnology.id).label("cnt")
+        )
+        .join(ExperienceTechnology, Technology.id == ExperienceTechnology.technology_id)
+        .join(InternshipExperience, ExperienceTechnology.experience_id == InternshipExperience.id)
+        .where(
+            and_(
+                InternshipExperience.company_id.in_(company_ids),
+                InternshipExperience.status == "PUBLISHED"
+            )
+        )
+        .group_by(InternshipExperience.company_id, Technology.name)
+        .order_by(InternshipExperience.company_id, func.count(ExperienceTechnology.id).desc())
+    )
+    top_techs_map = {}
+    for comp_id, tech_name, _ in tech_res.all():
+        if comp_id not in top_techs_map:
+            top_techs_map[comp_id] = []
+        if len(top_techs_map[comp_id]) < 5:
+            top_techs_map[comp_id].append(tech_name)
+
+    # Batch 4: Top roles for all companies
+    roles_res = await db.execute(
+        select(
+            InternshipExperience.company_id,
+            InternshipExperience.position,
+            func.count(InternshipExperience.id).label("cnt")
+        )
+        .where(
+            and_(
+                InternshipExperience.company_id.in_(company_ids),
+                InternshipExperience.status == "PUBLISHED"
+            )
+        )
+        .group_by(InternshipExperience.company_id, InternshipExperience.position)
+        .order_by(InternshipExperience.company_id, func.count(InternshipExperience.id).desc())
+    )
+    top_roles_map = {}
+    for comp_id, pos, _ in roles_res.all():
+        if comp_id not in top_roles_map:
+            top_roles_map[comp_id] = []
+        if len(top_roles_map[comp_id]) < 4:
+            top_roles_map[comp_id].append(pos)
+
     result = []
     for c in companies:
-        # Get experiences count and allowance stats
-        exp_res = await db.execute(
-            select(
-                func.count(InternshipExperience.id),
-                func.avg(InternshipExperience.allowance),
-                func.min(InternshipExperience.allowance),
-                func.max(InternshipExperience.allowance),
-                func.avg(InternshipExperience.overall_rating)
-            ).where(
-                and_(
-                    InternshipExperience.company_id == c.id,
-                    InternshipExperience.status == "PUBLISHED"
-                )
-            )
-        )
-        row = exp_res.one()
-        exp_count, avg_allowance, min_allowance, max_allowance, avg_rating = row
-
-        # Opportunities count
-        opp_res = await db.execute(
-            select(func.count(Opportunity.id)).where(
-                and_(
-                    Opportunity.company_id == c.id,
-                    Opportunity.status == "OPEN"
-                )
-            )
-        )
-        opp_count = opp_res.scalar_one()
-
-        # Get top technologies
-        tech_res = await db.execute(
-            select(Technology.name, func.count(ExperienceTechnology.id).label("cnt"))
-            .join(ExperienceTechnology, Technology.id == ExperienceTechnology.technology_id)
-            .join(InternshipExperience, ExperienceTechnology.experience_id == InternshipExperience.id)
-            .where(
-                and_(
-                    InternshipExperience.company_id == c.id,
-                    InternshipExperience.status == "PUBLISHED"
-                )
-            )
-            .group_by(Technology.name)
-            .order_by(func.count(ExperienceTechnology.id).desc())
-            .limit(5)
-        )
-        top_techs = [t[0] for t in tech_res.all()]
-
-        # Get top roles
-        roles_res = await db.execute(
-            select(InternshipExperience.position, func.count(InternshipExperience.id))
-            .where(
-                and_(
-                    InternshipExperience.company_id == c.id,
-                    InternshipExperience.status == "PUBLISHED"
-                )
-            )
-            .group_by(InternshipExperience.position)
-            .order_by(func.count(InternshipExperience.id).desc())
-            .limit(4)
-        )
-        top_roles = [r[0] for r in roles_res.all()]
+        stats = exp_stats_map.get(c.id, {})
+        exp_count = stats.get("exp_count", 0)
+        avg_allowance = stats.get("avg_allowance")
+        min_allowance = stats.get("min_allowance")
+        max_allowance = stats.get("max_allowance")
+        avg_rating = stats.get("avg_rating")
+        opp_count = opp_stats_map.get(c.id, 0)
+        top_techs = top_techs_map.get(c.id, [])
+        top_roles = top_roles_map.get(c.id, [])
 
         c_dict = CompanyOut.model_validate(c).model_dump()
         result.append(CompanyWithStats(
