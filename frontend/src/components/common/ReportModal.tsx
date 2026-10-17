@@ -1,9 +1,10 @@
 import React, { useState } from 'react';
+import { useNavigate, useLocation, Link } from 'react-router-dom';
 import { Modal } from '../ui/Modal';
 import { Button } from '../ui/Button';
 import { api } from '../../services/api';
 import { useAuth } from '../../context/AuthContext';
-import { WarningCircle, CheckCircle } from '@phosphor-icons/react';
+import { WarningCircle, CheckCircle, LockKey, SignIn } from '@phosphor-icons/react';
 
 interface ReportModalProps {
   isOpen: boolean;
@@ -21,6 +22,9 @@ export const ReportModal: React.FC<ReportModalProps> = ({
   targetTitle,
 }) => {
   const { user } = useAuth();
+  const navigate = useNavigate();
+  const location = useLocation();
+
   const [reason, setReason] = useState('INACCURATE');
   const [details, setDetails] = useState('');
   const [submitting, setSubmitting] = useState(false);
@@ -30,7 +34,8 @@ export const ReportModal: React.FC<ReportModalProps> = ({
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!user) {
-      window.location.href = '/login';
+      onClose();
+      navigate('/login', { state: { from: location.pathname } });
       return;
     }
     setSubmitting(true);
@@ -59,10 +64,61 @@ export const ReportModal: React.FC<ReportModalProps> = ({
     <Modal
       isOpen={isOpen}
       onClose={onClose}
-      title={`Report ${targetType.toLowerCase()}`}
+      title={!user ? "Sign In Required" : `Report ${targetType.toLowerCase()}`}
       maxWidth="md"
     >
-      {submitted ? (
+      {!user ? (
+        <div className="py-5 px-1 text-center space-y-4">
+          <div className="w-12 h-12 mx-auto bg-red-50 dark:bg-red-950/30 border border-red-200 dark:border-red-900/50 rounded-full flex items-center justify-center">
+            <LockKey size={24} weight="duotone" className="text-[#991b1b]" />
+          </div>
+
+          <div className="space-y-1.5">
+            <h4 className="font-bold text-base text-[#0a0a0a] dark:text-[#f5f5f5]">Sign In to Report Content</h4>
+            <p className="text-xs text-[#737373] max-w-sm mx-auto leading-relaxed">
+              To maintain accuracy, prevent spam, and verify community reports, you must be signed in to submit a report for moderation.
+            </p>
+          </div>
+
+          {targetTitle && (
+            <div className="p-2.5 bg-[#f5f5f5] dark:bg-[#1a1a1a] border border-[#e5e5e5] dark:border-[#262626] text-xs text-[#525252] dark:text-[#a3a3a3] rounded-[2px] max-w-md mx-auto truncate">
+              Flagging: <strong className="text-[#0a0a0a] dark:text-[#f5f5f5]">{targetTitle}</strong>
+            </div>
+          )}
+
+          <div className="flex flex-col sm:flex-row items-center justify-center gap-2 pt-3 border-t border-[#f0f0f0] dark:border-[#262626]">
+            <Button
+              type="button"
+              variant="outline"
+              size="sm"
+              onClick={onClose}
+              className="w-full sm:w-auto text-xs"
+            >
+              Cancel
+            </Button>
+            <Button
+              type="button"
+              variant="blood"
+              size="sm"
+              onClick={() => {
+                onClose();
+                navigate('/login', { state: { from: location.pathname } });
+              }}
+              className="w-full sm:w-auto text-xs font-bold flex items-center gap-1.5 justify-center"
+            >
+              <SignIn size={15} weight="bold" />
+              Sign In to Continue
+            </Button>
+            <Link
+              to="/register"
+              onClick={onClose}
+              className="text-xs text-[#991b1b] hover:underline font-semibold px-2 py-1"
+            >
+              Create Account
+            </Link>
+          </div>
+        </div>
+      ) : submitted ? (
         <div className="text-center py-6 space-y-3">
           <CheckCircle size={40} weight="fill" className="text-[#16a34a] mx-auto" />
           <h4 className="font-semibold text-base text-[#0a0a0a]">Report Submitted</h4>
