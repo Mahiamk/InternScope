@@ -123,7 +123,7 @@ export interface InternshipExperience {
   challenges?: string;
   advice?: string;
   anonymous_display: boolean;
-  status: 'DRAFT' | 'PENDING' | 'PUBLISHED' | 'REJECTED';
+  status: 'DRAFT' | 'PENDING' | 'PUBLISHED' | 'REJECTED' | 'CORRECTIONS_NEEDED';
   rejection_reason?: string;
   views_count: number;
   created_at: string;
@@ -228,11 +228,34 @@ export interface PlatformStats {
 
 export interface AdminMetrics {
   total_users: number;
+  active_users: number;
   pending_experiences: number;
   published_experiences: number;
+  rejected_experiences: number;
+  corrections_needed_experiences: number;
   total_companies: number;
+  verified_companies: number;
+  archived_companies: number;
   total_opportunities: number;
+  active_opportunities: number;
+  expiring_soon_opportunities: number;
   open_reports: number;
+  under_review_reports: number;
+  resolved_reports: number;
+  total_applications_tracked: number;
+  total_bookmarks: number;
+  new_users_7d: number;
+  new_experiences_7d: number;
+  new_reports_7d: number;
+  recent_actions: {
+    id: string;
+    action: string;
+    actor_name: string;
+    entity_type: string;
+    entity_id?: string;
+    created_at: string;
+    meta_data?: any;
+  }[];
 }
 
 export interface SkillItem {
@@ -478,4 +501,142 @@ export interface CVStatusResponse {
   has_server_key: boolean;
   model: string;
 }
+
+export interface GroupedReport {
+  target_type: string;
+  target_id: string;
+  target_title?: string;
+  target_subtitle?: string;
+  status: 'PENDING' | 'UNDER_REVIEW' | 'RESOLVED' | 'DISMISSED';
+  severity: 'LOW' | 'NORMAL' | 'HIGH' | 'CRITICAL';
+  report_count: number;
+  reasons: string[];
+  first_reported_at: string;
+  latest_reported_at: string;
+  assigned_moderator_id?: string;
+  assigned_moderator_name?: string;
+  resolution_notes?: string;
+  resolved_at?: string;
+  reports: {
+    id: string;
+    reporter_id?: string;
+    reporter_name?: string;
+    reason: string;
+    details?: string;
+    created_at: string;
+  }[];
+}
+
+export interface AdminCompany {
+  id: string;
+  name: string;
+  slug: string;
+  industry: string;
+  headquarters: string;
+  website?: string;
+  careers_url?: string;
+  domain?: string;
+  logo_url?: string;
+  description?: string;
+  is_verified: boolean;
+  is_archived: boolean;
+  created_at: string;
+  experiences_count: number;
+  opportunities_count: number;
+}
+
+export interface DataQualityReport {
+  missing_websites_count: number;
+  missing_logos_count: number;
+  expired_open_opportunities_count: number;
+  possible_duplicates_count: number;
+  unverified_companies_count: number;
+  items: {
+    id: string;
+    name: string;
+    issue: string;
+    issue_type: string;
+    details?: string;
+  }[];
+}
+
+export interface AdminUser {
+  id: string;
+  email: string;
+  full_name: string;
+  role: 'student' | 'moderator' | 'admin';
+  program?: string;
+  grad_year?: number;
+  is_verified: boolean;
+  is_active: boolean;
+  avatar_url?: string;
+  suspension_reason?: string;
+  created_at: string;
+  experiences_count: number;
+  questions_count: number;
+  answers_count: number;
+  applications_count: number;
+  reports_received_count: number;
+}
+
+export interface AllowanceDistribution {
+  sample_size: number;
+  currency: string;
+  min?: number;
+  max?: number;
+  median?: number;
+  p25?: number;
+  p75?: number;
+  disclaimer: string;
+}
+
+export interface AdminAnalytics {
+  reports_by_industry: Record<string, number>;
+  top_companies_by_reports: { name: string; slug: string; count: number }[];
+  top_roles_by_reports: { position: string; count: number }[];
+  application_status_breakdown: Record<string, number>;
+  total_saved_bookmarks: number;
+  allowance_distribution: AllowanceDistribution;
+  moderation_stats: {
+    total_moderation_actions: number;
+    resolved_reports: number;
+    pending_backlog: number;
+    resolution_rate_percent: number;
+    avg_review_turnaround: string;
+  };
+}
+
+export interface AuditLogItem {
+  id: string;
+  actor_id?: string;
+  actor_name?: string;
+  action: string;
+  entity_type: string;
+  entity_id?: string;
+  meta_data?: any;
+  created_at: string;
+}
+
+export interface QAModerationItem {
+  id: string;
+  type: 'SENIOR_QUESTION' | 'SENIOR_ANSWER' | 'EXPERIENCE_COMMENT';
+  title: string;
+  content: string;
+  author: string;
+  company?: string;
+  role?: string;
+  status: string;
+  created_at: string;
+}
+
+export interface SystemSettings {
+  require_experience_approval: boolean;
+  allow_student_registrations: boolean;
+  allow_anonymous_reports: boolean;
+  maintenance_mode: boolean;
+  announcement_banner?: string;
+  primary_university: string;
+  version: string;
+}
+
 
