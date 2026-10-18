@@ -1,4 +1,4 @@
-from sqlalchemy import Column, String, Boolean, Integer, ForeignKey
+from sqlalchemy import Column, String, Boolean, Integer, ForeignKey, Text
 from sqlalchemy.orm import relationship
 from app.core.database import Base
 from app.models.base import TimeStampedMixin
@@ -16,6 +16,7 @@ class User(Base, TimeStampedMixin):
     is_verified = Column(Boolean, default=True, nullable=False)
     is_active = Column(Boolean, default=True, nullable=False)
     avatar_url = Column(String(500), nullable=True)
+    suspension_reason = Column(Text, nullable=True)
 
     university = relationship("University", back_populates="users")
     profile = relationship("StudentProfile", back_populates="user", uselist=False, cascade="all, delete-orphan")
