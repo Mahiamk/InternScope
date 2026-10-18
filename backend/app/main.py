@@ -10,6 +10,7 @@ from app.api.v1.api import api_router
 from app.db.seed_data import seed_database
 from app.db.seed_senior_qa import seed_senior_qa
 from app.db.seed_community import seed_community
+from app.db.migrate_schema import migrate_columns
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
@@ -18,6 +19,9 @@ async def lifespan(app: FastAPI):
         async with async_engine.begin() as conn:
             await conn.run_sync(Base.metadata.create_all)
         
+        # Safely migrate missing columns if any
+        await migrate_columns()
+
         # Auto-seed initial demonstration data if empty
         await seed_database()
         await seed_senior_qa()
