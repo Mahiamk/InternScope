@@ -138,8 +138,8 @@ The platform comes pre-seeded with realistic Malaysian industry internship data 
 | **Politics Student** | `hassan@aiu.edu.my` | `StudentPass123!` | Bachelor of Politics & IR (IDEAS review) |
 | **Education Student** | `maryam@aiu.edu.my` | `StudentPass123!` | Bachelor of Education TESL (Teach For Malaysia review) |
 | **Finance Student** | `zulkifli@aiu.edu.my` | `StudentPass123!` | Bachelor of Finance & Accounting (PwC review) |
-| **AIU Moderator** | `moderator@aiu.edu.my` | `ModPass123!` | Access `/admin` moderation queue, approve/reject |
-| **Administrator** | `admin@internscope.my` | `AdminPass123!` | Full admin privileges, user management, audit logs |
+
+> **Note**: Administrative and moderation access credentials are kept strictly confidential and configured via secure environment variables / direct provisioning.
 
 ---
 
