@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import { useSearchParams } from 'react-router-dom';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import {
   Gauge,
@@ -40,8 +41,12 @@ export const AdminDashboardPage: React.FC = () => {
   const isAdmin = user?.role === 'admin';
   const isModerator = user?.role === 'moderator' || isAdmin;
 
-  // Active navigation state
-  const [activeSection, setActiveSection] = useState<NavSection>('overview');
+  // Active navigation state synchronized with URL search params
+  const [searchParams, setSearchParams] = useSearchParams();
+  const activeSection = (searchParams.get('tab') as NavSection) || 'overview';
+  const setActiveSection = (section: NavSection) => {
+    setSearchParams({ tab: section });
+  };
   const [moderationTab, setModerationTab] = useState<'pending' | 'experiences' | 'reports' | 'qa' | 'opportunities'>('pending');
   const [companyTab, setCompanyTab] = useState<'directory' | 'merge' | 'quality' | 'taxonomies'>('directory');
   const [userTab, setUserTab] = useState<'all' | 'moderators' | 'suspended'>('all');
@@ -293,159 +298,121 @@ export const AdminDashboardPage: React.FC = () => {
   }
 
   return (
-    <div className="min-h-screen bg-[#fafafa]">
-      {/* Top Banner & Context */}
-      <header className="bg-white border-b border-[#e5e5e5] sticky top-0 z-20">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-3.5 flex items-center justify-between">
-          <div className="flex items-center gap-3">
-            <span className="w-2.5 h-2.5 bg-[#991b1b]" />
-            <div>
-              <div className="flex items-center gap-2">
-                <h1 className="text-lg font-extrabold tracking-tight text-[#0a0a0a]">
-                  InternScope Control Center
-                </h1>
-                <Badge variant="blood" size="sm">
-                  {user.role.toUpperCase()}
-                </Badge>
-              </div>
-              <p className="text-[11px] text-[#737373]">
-                Albukhary International University • Industrial Knowledge Governance
-              </p>
+    <div className="space-y-6">
+      {/* Control Center Hero Banner & Section Tabs */}
+      <div className="bg-white border border-[#e5e5e5] p-5 rounded-[2px] space-y-4 shadow-2xs">
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+          <div>
+            <div className="flex items-center gap-2">
+              <span className="w-2.5 h-2.5 bg-[#991b1b]" />
+              <h1 className="text-xl font-extrabold tracking-tight text-[#0a0a0a]">
+                InternScope Control Center
+              </h1>
+              <Badge variant="blood" size="sm">
+                {user.role.toUpperCase()}
+              </Badge>
             </div>
+            <p className="text-xs text-[#737373] mt-1">
+              Platform supervisory console, trust & safety enforcement, and data governance.
+            </p>
           </div>
-
           <div className="flex items-center gap-2">
-            <span className="text-xs text-[#525252] hidden sm:inline">
-              Signed in as <strong>{user.full_name}</strong>
+            <span className="inline-flex items-center gap-1.5 px-2.5 py-1 text-xs font-semibold text-[#16a34a] bg-emerald-50 border border-emerald-200 rounded-[2px]">
+              <span className="w-1.5 h-1.5 rounded-full bg-[#16a34a] animate-pulse" />
+              Live Governance Node
             </span>
           </div>
         </div>
-      </header>
 
-      {/* Main Layout: Sidebar + Workspace */}
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
-        <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
-          
-          {/* ========================================================= */}
-          {/* LEFT SIDEBAR NAVIGATION */}
-          {/* ========================================================= */}
-          <aside className="lg:col-span-3 bg-white border border-[#e5e5e5] rounded-[2px] p-2 space-y-1">
-            <div className="px-3 py-2 text-[10px] font-bold tracking-wider text-[#a3a3a3] uppercase">
-              Main Sections
-            </div>
+        {/* Section Quick Switcher Tabs */}
+        <div className="flex items-center gap-1.5 overflow-x-auto pt-3 border-t border-[#f5f5f5]">
+          <button
+            onClick={() => setActiveSection('overview')}
+            className={`px-3 py-1.5 text-xs font-medium rounded-[2px] transition-colors flex items-center gap-1.5 shrink-0 ${
+              activeSection === 'overview'
+                ? 'bg-[#0a0a0a] text-white font-semibold'
+                : 'bg-white border border-[#e5e5e5] text-[#525252] hover:bg-[#f5f5f5] hover:text-[#0a0a0a]'
+            }`}
+          >
+            <Gauge size={14} weight={activeSection === 'overview' ? 'fill' : 'bold'} />
+            <span>Overview</span>
+          </button>
 
-            <button
-              onClick={() => setActiveSection('overview')}
-              className={`w-full flex items-center gap-2.5 px-3 py-2 rounded-[2px] text-xs font-medium transition-colors ${
-                activeSection === 'overview'
-                  ? 'bg-[#0a0a0a] text-white font-semibold'
-                  : 'text-[#404040] hover:bg-[#f5f5f5] hover:text-[#0a0a0a]'
-              }`}
-            >
-              <Gauge size={16} weight={activeSection === 'overview' ? 'fill' : 'bold'} />
-              <span>Overview</span>
-            </button>
-
-            <button
-              onClick={() => setActiveSection('moderation')}
-              className={`w-full flex items-center justify-between px-3 py-2 rounded-[2px] text-xs font-medium transition-colors ${
-                activeSection === 'moderation'
-                  ? 'bg-[#0a0a0a] text-white font-semibold'
-                  : 'text-[#404040] hover:bg-[#f5f5f5] hover:text-[#0a0a0a]'
-              }`}
-            >
-              <div className="flex items-center gap-2.5">
-                <ShieldCheck size={16} weight={activeSection === 'moderation' ? 'fill' : 'bold'} />
-                <span>Content Moderation</span>
-              </div>
-              {(metrics?.pending_experiences || 0) + (metrics?.open_reports || 0) > 0 && (
-                <span className={`text-[10px] px-1.5 py-0.2 rounded font-bold ${
-                  activeSection === 'moderation' ? 'bg-[#991b1b] text-white' : 'bg-[#fee2e2] text-[#991b1b]'
-                }`}>
-                  {(metrics?.pending_experiences || 0) + (metrics?.open_reports || 0)}
-                </span>
-              )}
-            </button>
-
-            {isAdmin && (
-              <>
-                <div className="pt-3 px-3 py-1 text-[10px] font-bold tracking-wider text-[#a3a3a3] uppercase">
-                  Platform Governance (Admin)
-                </div>
-
-                <button
-                  onClick={() => setActiveSection('companies')}
-                  className={`w-full flex items-center justify-between px-3 py-2 rounded-[2px] text-xs font-medium transition-colors ${
-                    activeSection === 'companies'
-                      ? 'bg-[#0a0a0a] text-white font-semibold'
-                      : 'text-[#404040] hover:bg-[#f5f5f5] hover:text-[#0a0a0a]'
-                  }`}
-                >
-                  <div className="flex items-center gap-2.5">
-                    <Buildings size={16} weight={activeSection === 'companies' ? 'fill' : 'bold'} />
-                    <span>Company & Data Quality</span>
-                  </div>
-                </button>
-
-                <button
-                  onClick={() => setActiveSection('users')}
-                  className={`w-full flex items-center justify-between px-3 py-2 rounded-[2px] text-xs font-medium transition-colors ${
-                    activeSection === 'users'
-                      ? 'bg-[#0a0a0a] text-white font-semibold'
-                      : 'text-[#404040] hover:bg-[#f5f5f5] hover:text-[#0a0a0a]'
-                  }`}
-                >
-                  <div className="flex items-center gap-2.5">
-                    <Users size={16} weight={activeSection === 'users' ? 'fill' : 'bold'} />
-                    <span>Users & Access Control</span>
-                  </div>
-                </button>
-
-                <button
-                  onClick={() => setActiveSection('analytics')}
-                  className={`w-full flex items-center gap-2.5 px-3 py-2 rounded-[2px] text-xs font-medium transition-colors ${
-                    activeSection === 'analytics'
-                      ? 'bg-[#0a0a0a] text-white font-semibold'
-                      : 'text-[#404040] hover:bg-[#f5f5f5] hover:text-[#0a0a0a]'
-                  }`}
-                >
-                  <ChartBar size={16} weight={activeSection === 'analytics' ? 'fill' : 'bold'} />
-                  <span>Analytics & Insights</span>
-                </button>
-
-                <button
-                  onClick={() => setActiveSection('settings')}
-                  className={`w-full flex items-center gap-2.5 px-3 py-2 rounded-[2px] text-xs font-medium transition-colors ${
-                    activeSection === 'settings'
-                      ? 'bg-[#0a0a0a] text-white font-semibold'
-                      : 'text-[#404040] hover:bg-[#f5f5f5] hover:text-[#0a0a0a]'
-                  }`}
-                >
-                  <Gear size={16} weight={activeSection === 'settings' ? 'fill' : 'bold'} />
-                  <span>Settings & Audit Trail</span>
-                </button>
-              </>
+          <button
+            onClick={() => setActiveSection('moderation')}
+            className={`px-3 py-1.5 text-xs font-medium rounded-[2px] transition-colors flex items-center gap-1.5 shrink-0 ${
+              activeSection === 'moderation'
+                ? 'bg-[#0a0a0a] text-white font-semibold'
+                : 'bg-white border border-[#e5e5e5] text-[#525252] hover:bg-[#f5f5f5] hover:text-[#0a0a0a]'
+            }`}
+          >
+            <ShieldCheck size={14} weight={activeSection === 'moderation' ? 'fill' : 'bold'} />
+            <span>Content Moderation</span>
+            {(metrics?.pending_experiences || 0) + (metrics?.open_reports || 0) > 0 && (
+              <span className={`text-[10px] px-1.5 py-0.2 rounded font-bold ${
+                activeSection === 'moderation' ? 'bg-[#991b1b] text-white' : 'bg-[#fee2e2] text-[#991b1b]'
+              }`}>
+                {(metrics?.pending_experiences || 0) + (metrics?.open_reports || 0)}
+              </span>
             )}
+          </button>
 
-            {/* Quick Status Box */}
-            <div className="pt-4 border-t border-[#f5f5f5] px-3 pb-2 text-[11px] text-[#737373] space-y-1">
-              <div className="flex justify-between items-center">
-                <span>Database Status:</span>
-                <span className="text-[#16a34a] font-medium flex items-center gap-1">
-                  <span className="w-1.5 h-1.5 rounded-full bg-[#16a34a]" /> Online
-                </span>
-              </div>
-              <div className="flex justify-between items-center">
-                <span>Active Users:</span>
-                <span className="font-semibold text-[#0a0a0a]">{metrics?.active_users || 0}</span>
-              </div>
-            </div>
-          </aside>
+          {isAdmin && (
+            <>
+              <button
+                onClick={() => setActiveSection('companies')}
+                className={`px-3 py-1.5 text-xs font-medium rounded-[2px] transition-colors flex items-center gap-1.5 shrink-0 ${
+                  activeSection === 'companies'
+                    ? 'bg-[#0a0a0a] text-white font-semibold'
+                    : 'bg-white border border-[#e5e5e5] text-[#525252] hover:bg-[#f5f5f5] hover:text-[#0a0a0a]'
+                }`}
+              >
+                <Buildings size={14} weight={activeSection === 'companies' ? 'fill' : 'bold'} />
+                <span>Company & Data Quality</span>
+              </button>
 
-          {/* ========================================================= */}
-          {/* RIGHT WORKSPACE AREA */}
-          {/* ========================================================= */}
-          <main className="lg:col-span-9 space-y-6">
+              <button
+                onClick={() => setActiveSection('users')}
+                className={`px-3 py-1.5 text-xs font-medium rounded-[2px] transition-colors flex items-center gap-1.5 shrink-0 ${
+                  activeSection === 'users'
+                    ? 'bg-[#0a0a0a] text-white font-semibold'
+                    : 'bg-white border border-[#e5e5e5] text-[#525252] hover:bg-[#f5f5f5] hover:text-[#0a0a0a]'
+                }`}
+              >
+                <Users size={14} weight={activeSection === 'users' ? 'fill' : 'bold'} />
+                <span>Users & Access Control</span>
+              </button>
+
+              <button
+                onClick={() => setActiveSection('analytics')}
+                className={`px-3 py-1.5 text-xs font-medium rounded-[2px] transition-colors flex items-center gap-1.5 shrink-0 ${
+                  activeSection === 'analytics'
+                    ? 'bg-[#0a0a0a] text-white font-semibold'
+                    : 'bg-white border border-[#e5e5e5] text-[#525252] hover:bg-[#f5f5f5] hover:text-[#0a0a0a]'
+                }`}
+              >
+                <ChartBar size={14} weight={activeSection === 'analytics' ? 'fill' : 'bold'} />
+                <span>Analytics & Insights</span>
+              </button>
+
+              <button
+                onClick={() => setActiveSection('settings')}
+                className={`px-3 py-1.5 text-xs font-medium rounded-[2px] transition-colors flex items-center gap-1.5 shrink-0 ${
+                  activeSection === 'settings'
+                    ? 'bg-[#0a0a0a] text-white font-semibold'
+                    : 'bg-white border border-[#e5e5e5] text-[#525252] hover:bg-[#f5f5f5] hover:text-[#0a0a0a]'
+                }`}
+              >
+                <Gear size={14} weight={activeSection === 'settings' ? 'fill' : 'bold'} />
+                <span>Settings & Audit Trail</span>
+              </button>
+            </>
+          )}
+        </div>
+      </div>
+
+      {/* Main Workspace Area (Full Width) */}
+      <main className="w-full space-y-6">
 
             {/* ------------------------------------------------------- */}
             {/* 1. OVERVIEW SECTION */}
@@ -1528,9 +1495,7 @@ export const AdminDashboardPage: React.FC = () => {
               </div>
             )}
 
-          </main>
-        </div>
-      </div>
+      </main>
 
       {/* ========================================================= */}
       {/* MODALS */}
