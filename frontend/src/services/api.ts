@@ -6,7 +6,9 @@ import type {
   RecommendedExperienceItem, SkillGapAnalysisResponse, CompanyLogoResolveResponse,
   SeniorQuestionItem, SeniorAnswerItem, SeniorFollowUpItem, SeniorQuestionListResponse,
   CommunityGroup, CommunityPost, CommunityReply,
-  CVAnalysisResponse, CVStatusResponse
+  CVAnalysisResponse, CVStatusResponse,
+  GroupedReport, AdminCompany, DataQualityReport, AdminUser,
+  AdminAnalytics, AuditLogItem, QAModerationItem, SystemSettings
 } from '../types';
 
 const API_BASE = (import.meta.env.VITE_API_URL ? String(import.meta.env.VITE_API_URL).replace(/\/$/, '') : '') + '/api/v1';
@@ -213,22 +215,140 @@ export const api = {
     summary: () => request<PlatformStats>('/stats/summary'),
   },
 
-  // Admin
+  // Admin & Moderation Control Center
   admin: {
     getMetrics: () => request<AdminMetrics>('/admin/metrics'),
+    getAnalytics: () => request<AdminAnalytics>('/admin/analytics'),
+    
+    // Experiences Moderation
     listPending: () => request<InternshipExperience[]>('/admin/pending-experiences'),
-    moderate: (id: string, data: { action: 'APPROVE' | 'REJECT'; notes?: string; rejection_reason?: string }) =>
+    listExperiences: (params?: { status_filter?: string; search?: string; offset?: number; limit?: number }) => {
+      const q = new URLSearchParams();
+      if (params?.status_filter) q.set('status_filter', params.status_filter);
+      if (params?.search) q.set('search', params.search);
+      if (params?.offset !== undefined) q.set('offset', String(params.offset));
+      if (params?.limit !== undefined) q.set('limit', String(params.limit));
+      return request<InternshipExperience[]>(`/admin/experiences${q.toString() ? `?${q.toString()}` : ''}`);
+    },
+    moderate: (id: string, data: { action: 'APPROVE' | 'REJECT' | 'REQUEST_CORRECTIONS' | 'HIDE'; notes?: string; rejection_reason?: string }) =>
       request<InternshipExperience>(`/admin/experiences/${id}/moderate`, {
         method: 'POST',
         body: JSON.stringify(data),
       }),
-    listReports: (statusFilter?: string) =>
-      request<ContentReport[]>(`/admin/reports${statusFilter ? `?status_filter=${statusFilter}` : ''}`),
-    resolveReport: (id: string, statusUpdate: 'RESOLVED' | 'DISMISSED') =>
-      request<{ message: string }>(`/admin/reports/${id}/resolve?status_update=${statusUpdate}`, {
-        method: 'POST',
+    relinkExperience: (id: string, companyId: string) =>
+      request<{ message: string }>(`/admin/experiences/${id}/relink?company_id=${companyId}`, {
+        method: 'PATCH',
       }),
-    listUsers: () => request<User[]>('/admin/users'),
+
+    // Reports Workflow
+    listReports: (statusFilter?: string) =>
+      request<GroupedReport[]>(`/admin/reports${statusFilter ? `?status_filter=${statusFilter}` : ''}`),
+    updateReportLifecycle: (targetType: string, targetId: string, data: {
+      status: string;
+      severity?: string;
+      assigned_moderator_id?: string;
+      resolution_notes?: string;
+      action_taken?: string;
+    }) =>
+      request<{ message: string }>(`/admin/reports/${targetType}/${targetId}/lifecycle`, {
+        method: 'PATCH',
+        body: JSON.stringify(data),
+      }),
+
+    // QA & Discussions Moderation
+    listQA: (statusFilter?: string) =>
+      request<QAModerationItem[]>(`/admin/qa${statusFilter ? `?status_filter=${statusFilter}` : ''}`),
+    updateQAStatus: (itemType: string, id: string, statusUpdate: string) =>
+      request<{ message: string }>(`/admin/qa/${itemType}/${id}/status?status_update=${statusUpdate}`, {
+        method: 'PATCH',
+      }),
+
+    // Companies & Safe Deletion / Merge
+    listCompanies: (params?: { search?: string; include_archived?: boolean; offset?: number; limit?: number }) => {
+      const q = new URLSearchParams();
+      if (params?.search) q.set('search', params.search);
+      if (params?.include_archived !== undefined) q.set('include_archived', String(params.include_archived));
+      if (params?.offset !== undefined) q.set('offset', String(params.offset));
+      if (params?.limit !== undefined) q.set('limit', String(params.limit));
+      return request<AdminCompany[]>(`/admin/companies${q.toString() ? `?${q.toString()}` : ''}`);
+    },
+    createCompany: (data: Partial<AdminCompany>) =>
+      request<AdminCompany>('/admin/companies', {
+        method: 'POST',
+        body: JSON.stringify(data),
+      }),
+    updateCompany: (id: string, data: Partial<AdminCompany>) =>
+      request<AdminCompany>(`/admin/companies/${id}`, {
+        method: 'PATCH',
+        body: JSON.stringify(data),
+      }),
+    getCompanyImpact: (id: string) =>
+      request<{ company_id: string; name: string; experiences_count: number; opportunities_count: number; bookmarks_count: number; questions_count: number }>(`/admin/companies/${id}/impact`),
+    mergeCompanies: (data: { source_company_id: string; target_company_id: string; archive_source?: boolean }) =>
+      request<{ message: string; migrated: any }>('/admin/companies/merge', {
+        method: 'POST',
+        body: JSON.stringify(data),
+      }),
+    getDataQuality: () => request<DataQualityReport>('/admin/data-quality'),
+
+    // Opportunities
+    listOpportunities: (params?: { status_filter?: string; search?: string }) => {
+      const q = new URLSearchParams();
+      if (params?.status_filter) q.set('status_filter', params.status_filter);
+      if (params?.search) q.set('search', params.search);
+      return request<any[]>(`/admin/opportunities${q.toString() ? `?${q.toString()}` : ''}`);
+    },
+    updateOpportunityStatus: (id: string, status: string) =>
+      request<{ message: string }>(`/admin/opportunities/${id}/status?status_update=${status}`, {
+        method: 'PATCH',
+      }),
+
+    // Taxonomies
+    listTaxonomies: () => request<any[]>('/admin/taxonomies'),
+    createTechnology: (name: string, category?: string) => {
+      const q = new URLSearchParams({ name, category: category || 'Tools & Software' });
+      return request<any>(`/admin/taxonomies/technologies?${q.toString()}`, { method: 'POST' });
+    },
+    deleteTechnology: (id: string) =>
+      request<{ message: string }>(`/admin/taxonomies/technologies/${id}`, { method: 'DELETE' }),
+
+    // Users & Roles
+    listUsers: (params?: { search?: string; role_filter?: string; offset?: number; limit?: number }) => {
+      const q = new URLSearchParams();
+      if (params?.search) q.set('search', params.search);
+      if (params?.role_filter) q.set('role_filter', params.role_filter);
+      if (params?.offset !== undefined) q.set('offset', String(params.offset));
+      if (params?.limit !== undefined) q.set('limit', String(params.limit));
+      return request<AdminUser[]>(`/admin/users${q.toString() ? `?${q.toString()}` : ''}`);
+    },
+    updateUserRole: (id: string, role: string) =>
+      request<{ message: string }>(`/admin/users/${id}/role`, {
+        method: 'PATCH',
+        body: JSON.stringify({ role }),
+      }),
+    updateUserStatus: (id: string, data: { is_active: boolean; suspension_reason?: string }) =>
+      request<{ message: string }>(`/admin/users/${id}/status`, {
+        method: 'PATCH',
+        body: JSON.stringify(data),
+      }),
+    toggleUserVerification: (id: string) =>
+      request<{ message: string }>(`/admin/users/${id}/verify`, {
+        method: 'PATCH',
+      }),
+
+    // Audit Logs & Settings
+    listAuditLogs: (params?: { action_filter?: string; entity_filter?: string }) => {
+      const q = new URLSearchParams();
+      if (params?.action_filter) q.set('action_filter', params.action_filter);
+      if (params?.entity_filter) q.set('entity_filter', params.entity_filter);
+      return request<AuditLogItem[]>(`/admin/audit-logs${q.toString() ? `?${q.toString()}` : ''}`);
+    },
+    getSettings: () => request<SystemSettings>('/admin/settings'),
+    updateSettings: (data: Partial<SystemSettings>) =>
+      request<SystemSettings>('/admin/settings', {
+        method: 'PATCH',
+        body: JSON.stringify(data),
+      }),
   },
 
   // Uploads
