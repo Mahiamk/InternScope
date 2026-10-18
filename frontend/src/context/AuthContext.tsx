@@ -7,7 +7,7 @@ interface AuthContextType {
   profile: StudentProfile | null;
   loading: boolean;
   profileLoading: boolean;
-  login: (email: string, password: string) => Promise<void>;
+  login: (email: string, password: string) => Promise<User>;
   register: (data: any) => Promise<void>;
   logout: () => void;
   refreshUser: () => Promise<void>;
@@ -63,11 +63,12 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     fetchCurrentUser();
   }, []);
 
-  const login = async (email: string, password: string) => {
+  const login = async (email: string, password: string): Promise<User> => {
     const res = await api.auth.login({ email, password });
     localStorage.setItem('internscope_token', res.access_token);
     setUser(res.user);
     await fetchProfile();
+    return res.user;
   };
 
   const register = async (data: any) => {
