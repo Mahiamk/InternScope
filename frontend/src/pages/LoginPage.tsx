@@ -19,9 +19,13 @@ export const LoginPage: React.FC = () => {
     setError(null);
     setLoading(true);
     try {
-      await login(email, password);
-      const destination = (location.state as any)?.from || '/dashboard';
-      navigate(destination, { replace: true });
+      const loggedUser = await login(email, password);
+      if (loggedUser.role === 'admin' || loggedUser.role === 'moderator') {
+        navigate('/admin', { replace: true });
+      } else {
+        const destination = (location.state as any)?.from || '/dashboard';
+        navigate(destination, { replace: true });
+      }
     } catch (err: any) {
       setError(err.message || 'Incorrect email or password');
     } finally {
@@ -137,14 +141,7 @@ export const LoginPage: React.FC = () => {
               <div className="font-semibold text-[#0a0a0a]">Finance / Audit</div>
               <div className="text-[10px] text-[#737373] truncate">zulkifli@aiu.edu.my</div>
             </button>
-            <button
-              type="button"
-              onClick={() => fillDemoAccount('moderator@aiu.edu.my', 'ModPass123!')}
-              className="p-2 border border-[#e5e5e5] hover:border-[#0a0a0a] rounded-[2px] text-left text-[#525252]"
-            >
-              <div className="font-semibold text-[#991b1b]">Career Moderator</div>
-              <div className="text-[10px] text-[#737373] truncate">moderator@aiu.edu.my</div>
-            </button>
+
           </div>
         </div>
 
