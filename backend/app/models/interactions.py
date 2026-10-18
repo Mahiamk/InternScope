@@ -1,4 +1,4 @@
-from sqlalchemy import Column, String, Text, ForeignKey, Date, JSON
+from sqlalchemy import Column, String, Text, ForeignKey, Date, JSON, DateTime
 from sqlalchemy.orm import relationship
 from app.core.database import Base
 from app.models.base import TimeStampedMixin
@@ -43,13 +43,18 @@ class ContentReport(Base, TimeStampedMixin):
     __tablename__ = "content_reports"
 
     reporter_user_id = Column(String(36), ForeignKey("users.id", ondelete="SET NULL"), nullable=True, index=True)
-    target_type = Column(String(50), nullable=False, index=True) # 'EXPERIENCE', 'COMMENT', 'COMPANY', 'OPPORTUNITY'
+    target_type = Column(String(50), nullable=False, index=True) # 'EXPERIENCE', 'COMMENT', 'COMPANY', 'OPPORTUNITY', 'QUESTION', 'ANSWER'
     target_id = Column(String(36), nullable=False, index=True)
     reason = Column(String(100), nullable=False) # 'INACCURATE', 'CONFIDENTIAL_DATA', 'SPAM', 'HARASSMENT', 'OTHER'
     details = Column(Text, nullable=True)
-    status = Column(String(50), default="PENDING", nullable=False, index=True) # 'PENDING', 'RESOLVED', 'DISMISSED'
+    status = Column(String(50), default="PENDING", nullable=False, index=True) # 'PENDING', 'UNDER_REVIEW', 'RESOLVED', 'DISMISSED'
+    severity = Column(String(50), default="NORMAL", nullable=False, index=True) # 'LOW', 'NORMAL', 'HIGH', 'CRITICAL'
+    assigned_moderator_id = Column(String(36), ForeignKey("users.id", ondelete="SET NULL"), nullable=True, index=True)
+    resolution_notes = Column(Text, nullable=True)
+    resolved_at = Column(DateTime, nullable=True)
 
-    reporter = relationship("User", back_populates="reports")
+    reporter = relationship("User", foreign_keys=[reporter_user_id], back_populates="reports")
+    assigned_moderator = relationship("User", foreign_keys=[assigned_moderator_id])
 
 class ModerationAction(Base, TimeStampedMixin):
     __tablename__ = "moderation_actions"
