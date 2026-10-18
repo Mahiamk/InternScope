@@ -96,7 +96,7 @@ export const LoginPage: React.FC = () => {
         </form>
 
         {/* Quick Demo Logins for Instant Testing */}
-        <div className="pt-4 border-t border-[#f5f5f5] space-y-2">
+        {/* <div className="pt-4 border-t border-[#f5f5f5] space-y-2">
           <span className="text-[11px] font-semibold text-[#737373] uppercase tracking-wider block text-center">
             Instant Demo Test Accounts (All Schools)
           </span>
@@ -143,7 +143,7 @@ export const LoginPage: React.FC = () => {
             </button>
 
           </div>
-        </div>
+        </div> */}
 
         <div className="text-center text-xs text-[#525252] pt-2">
           Don't have an account yet?{' '}
